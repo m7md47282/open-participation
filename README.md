@@ -2,6 +2,8 @@
 
 Backend that lets an admin share one training through a QR code, so people who scan it can play it without an account, while playback still goes through the existing session flow. Auth, organisations, the CDN and the session service are stubbed. A small Angular UI is included for the demo.
 
+**Live demo:** https://open-participation-707253960131.us-central1.run.app/admin (Google Cloud Run, scales to zero, so the first request may take a few seconds and demo data resets when idle).
+
 Design and diagrams: [ARCHITECTURE.md](ARCHITECTURE.md). QA test cases and expected results: [TEST_CASES.md](TEST_CASES.md) (also shown in the app at `/test-cases`). Original plan: [PLAN.md](PLAN.md).
 
 ## How to run
