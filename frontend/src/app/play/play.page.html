@@ -1,0 +1,133 @@
+<header class="lesson-topbar">
+  <span class="lesson-brand">Open Participation</span>
+  <div class="topbar-end">
+    <span class="lesson-badge">Shared training · no account needed</span>
+    <app-theme-switch />
+  </div>
+</header>
+
+<main class="lesson">
+  @switch (state()) {
+    @case ('loading') {
+      <div class="lesson-state">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="muted" role="status">Opening training…</p>
+      </div>
+    }
+
+    @case ('playing') {
+      <div class="lesson-grid">
+        <section class="lesson-main" aria-label="Lesson">
+          <div class="player">
+            <div class="player-screen" aria-hidden="true">
+              <div class="player-chapter">Chapter {{ currentChapter()?.index }} of {{ chapters().length }}</div>
+              <div class="player-chapter-title">{{ currentChapter()?.title }}</div>
+              @if (paused()) {
+                <div class="player-paused">Paused</div>
+              }
+            </div>
+            <div class="player-controls">
+              <button
+                class="icon-button"
+                type="button"
+                (click)="togglePause()"
+                [attr.aria-label]="paused() ? 'Play' : 'Pause'"
+              >
+                @if (paused()) {
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z" /></svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+                    <path fill="currentColor" d="M6 5h4v14H6zM14 5h4v14h-4z" />
+                  </svg>
+                }
+              </button>
+              <div
+                class="player-track"
+                role="progressbar"
+                aria-label="Lesson progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                [attr.aria-valuenow]="progress()"
+              >
+                <div class="player-fill" [style.width.%]="progress()"></div>
+                @for (c of chapters(); track c.index) {
+                  @if (c.startSeconds > 0) {
+                    <span class="player-mark" [style.left.%]="(c.startSeconds / duration()) * 100"></span>
+                  }
+                }
+              </div>
+              <span class="player-time">{{ time(elapsed()) }} / {{ time(duration()) }}</span>
+            </div>
+          </div>
+
+          <div class="lesson-info">
+            <p class="eyebrow">Safety training · {{ minutes(duration()) }} · {{ chapters().length }} chapters</p>
+            <h1>{{ title() }}</h1>
+            @if (manifest()?.description) {
+              <p class="lesson-description">{{ manifest()?.description }}</p>
+            }
+            <div class="lesson-actions">
+              <button type="button" (click)="finish()">Finish training</button>
+              <span class="muted small">{{ progress() }}% watched</span>
+            </div>
+            <p class="lesson-privacy small">
+              You are watching as an anonymous participant. No account or personal details are needed.
+            </p>
+          </div>
+        </section>
+
+        <aside class="lesson-outline card" aria-label="In this lesson">
+          <h2>In this lesson</h2>
+          <p class="muted small">{{ completedChapters() }} of {{ chapters().length }} chapters complete</p>
+          <ol class="chapters">
+            @for (c of chapters(); track c.index) {
+              <li
+                [class.current]="c.index === currentChapter()?.index"
+                [class.done]="elapsed() >= c.endSeconds"
+              >
+                <button
+                  type="button"
+                  class="chapter"
+                  [disabled]="c.startSeconds > elapsed()"
+                  [attr.aria-current]="c.index === currentChapter()?.index ? 'step' : null"
+                  (click)="goTo(c.startSeconds)"
+                >
+                  <span class="chapter-index" aria-hidden="true">
+                    @if (elapsed() >= c.endSeconds) {
+                      <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" /></svg>
+                    } @else {
+                      {{ c.index }}
+                    }
+                  </span>
+                  <span class="chapter-text">
+                    <span class="chapter-title">{{ c.title }}</span>
+                    <span class="chapter-length">{{ minutes(c.lengthSeconds) }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ol>
+        </aside>
+      </div>
+    }
+
+    @case ('finished') {
+      <section class="lesson-state card done-card">
+        <div class="done-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" /></svg>
+        </div>
+        <h1>{{ title() }}</h1>
+        <p>Training complete. You can close this page.</p>
+        <p class="muted small">Your viewing was recorded anonymously for your organisation's training report.</p>
+      </section>
+    }
+
+    @default {
+      <section class="lesson-state card">
+        <h1>Unavailable</h1>
+        <p role="alert">{{ message() }}</p>
+        <p class="muted small">If you think this is a mistake, ask the person who shared the QR code.</p>
+      </section>
+    }
+  }
+</main>

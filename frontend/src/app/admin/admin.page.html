@@ -1,0 +1,150 @@
+<header class="topbar">
+  <div class="brand">Open Participation <span class="muted">admin</span></div>
+  <nav class="nav" aria-label="Main">
+    <a routerLink="/admin" aria-current="page">Admin</a>
+    <a routerLink="/test-cases">Test cases</a>
+  </nav>
+  <div class="topbar-end">
+    <label class="login">
+      <span class="muted">Signed in as (stubbed login)</span>
+      <select [ngModel]="login()" (ngModelChange)="switchLogin($event)">
+        @for (l of logins; track l.token) {
+          <option [value]="l.token">{{ l.label }}</option>
+        }
+      </select>
+    </label>
+    <app-theme-switch />
+  </div>
+</header>
+
+<main class="container">
+  @if (error()) {
+    <div class="alert" role="alert">{{ error() }}</div>
+  }
+
+  @if (me(); as me) {
+    <p class="muted">{{ me.displayName }} · {{ me.orgName }}</p>
+
+    <section class="card">
+      <h2>Share a training</h2>
+      <p class="muted">
+        Anyone with the QR code can play this one training without an account, until you deactivate the link.
+        Only training enabled for the whole organisation can be shared.
+      </p>
+      <form class="row form-row" (ngSubmit)="createShare()">
+        <label class="field">
+          <span>Training to share</span>
+          <select name="content" [(ngModel)]="selectedContentId" required>
+            @for (c of shareableContent(); track c.id) {
+              <option [value]="c.id">{{ c.title }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Label <span class="muted">(optional)</span></span>
+          <input name="label" [(ngModel)]="label" maxlength="100" placeholder="e.g. Site gate poster" />
+        </label>
+        <button type="submit" [disabled]="busy() || !selectedContentId">Create share</button>
+      </form>
+
+      @if (created(); as c) {
+        <div class="created">
+          <img [src]="c.qrCodeDataUrl" alt="QR code for {{ c.share.label }}" width="200" height="200" />
+          <div>
+            <h3>{{ c.share.label }}</h3>
+            <p><strong>Save this QR code now.</strong> The link is shown only once; only a hash of it is stored.</p>
+            <p class="mono break" data-testid="share-url">{{ c.shareUrl }}</p>
+            <div class="row">
+              <a class="button" [href]="c.qrCodeDataUrl" download="share-qr.png">Download QR</a>
+              <a class="button secondary" [href]="c.shareUrl" target="_blank" rel="noopener noreferrer">Open as a visitor</a>
+              <button class="secondary" type="button" (click)="dismissCreated()">Done</button>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="card">
+      <h2>Shares</h2>
+      @if (shares().length === 0) {
+        <p class="muted">No shares yet.</p>
+      } @else {
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Shares table">
+          <table class="stack">
+            <thead>
+              <tr><th>Label</th><th>Training</th><th>Status</th><th>Plays</th><th>Playing now</th><th>Created</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (s of shares(); track s.id) {
+                <tr>
+                  <td data-label="Label">{{ s.label }}</td>
+                  <td data-label="Training">{{ s.contentTitle }}</td>
+                  <td data-label="Status"><span class="pill" [class.off]="s.status === 'inactive'">{{ s.status }}</span></td>
+                  <td data-label="Plays">{{ s.stats.totalSessions }}</td>
+                  <td data-label="Playing now">{{ s.stats.openSessions }}</td>
+                  <td data-label="Created">{{ s.createdAt | date: 'short' }}</td>
+                  <td class="actions">
+                    <button class="small" [class.danger]="s.status === 'active'" (click)="toggle(s)">
+                      {{ s.status === 'active' ? 'Mark inactive' : 'Reactivate' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="card">
+      <h2>Session report</h2>
+      <p class="muted">
+        Every playback goes through the session service. Shared plays appear as anonymous participants attributed to their
+        share ({{ guestRows() }} so far).
+      </p>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Session report table" data-testid="session-report">
+        <table class="stack">
+          <thead>
+            <tr><th>Participant</th><th>Source</th><th>Training</th><th>Status</th><th>Started</th><th>Ended</th></tr>
+          </thead>
+          <tbody>
+            @for (r of report(); track r.sessionId) {
+              <tr>
+                <td data-label="Participant">{{ r.participant }}</td>
+                <td data-label="Source">{{ r.source === 'share' ? 'Share: ' + r.shareLabel : 'Platform login' }}</td>
+                <td data-label="Training">{{ r.contentTitle }}</td>
+                <td data-label="Status">{{ r.status }}{{ r.closeReason ? ' (' + r.closeReason + ')' : '' }}</td>
+                <td data-label="Started">{{ r.startedAt | date: 'mediumTime' }}</td>
+                <td data-label="Ended">{{ r.endedAt ? (r.endedAt | date: 'mediumTime') : '' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Content enabled for {{ me.orgName }}</h2>
+      <ul class="plain">
+        @for (c of content(); track c.id) {
+          <li>
+            {{ c.title }} <span class="muted">· {{ scopeLabel(c) }}{{ c.shareable ? '' : ' · not shareable' }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Audit log</h2>
+      @if (audit().length === 0) {
+        <p class="muted">No events yet.</p>
+      } @else {
+        <ul class="plain mono" data-testid="audit-log">
+          @for (e of audit(); track e.id) {
+            <li>{{ e.at | date: 'mediumTime' }} · {{ e.action }} · {{ e.targetId }} · by {{ e.actor.userId }}</li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</main>

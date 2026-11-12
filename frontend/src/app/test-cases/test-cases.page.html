@@ -1,0 +1,34 @@
+<header class="topbar">
+  <div class="brand">Open Participation <span class="muted">test cases</span></div>
+  <nav class="nav" aria-label="Main">
+    <a routerLink="/admin">Admin</a>
+    <a routerLink="/test-cases" aria-current="page">Test cases</a>
+  </nav>
+  <app-theme-switch />
+</header>
+
+<main class="container">
+  @if (error()) {
+    <div class="alert" role="alert">{{ error() }}</div>
+  } @else {
+    <section class="card summary" aria-label="Summary">
+      <div class="stat"><span class="stat-value">{{ counts().total }}</span><span class="muted">test cases</span></div>
+      <div class="stat"><span class="stat-value">{{ counts().automated }}</span><span class="muted">automated</span></div>
+      <div class="stat"><span class="stat-value">{{ counts().manual }}</span><span class="muted">manual only</span></div>
+      <label class="field filter">
+        <span>Filter test cases</span>
+        <input
+          type="search"
+          [value]="query()"
+          (input)="onFilter($any($event.target).value)"
+          placeholder="e.g. deactivate, phone, TC-35"
+        />
+      </label>
+      @if (filtering()) {
+        <p class="muted small" role="status">{{ visible() }} of {{ counts().total }} cases match</p>
+      }
+    </section>
+
+    <article class="card doc" #doc [innerHTML]="html()"></article>
+  }
+</main>

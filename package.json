@@ -1,0 +1,15 @@
+{
+  "name": "open-participation",
+  "private": true,
+  "description": "Share one training through a QR code for anonymous playback, using the existing session flow.",
+  "scripts": {
+    "setup": "scripts/setup.sh",
+    "dev": "scripts/dev.sh",
+    "start": "scripts/run.sh",
+    "test": "scripts/test.sh",
+    "deploy": "scripts/deploy.sh",
+    "deploy:lan": "scripts/deploy.sh --lan",
+    "stop": "scripts/stop.sh",
+    "test:ui": "cd ui-tests && ([ -d node_modules ] || npm ci) && npx playwright install chromium && npx playwright test"
+  }
+}

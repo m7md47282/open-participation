@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.angular
+.env
+.git
+agent-logs
+*.md
+ui-tests
+!TEST_CASES.md

@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    image: open-participation:latest
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
