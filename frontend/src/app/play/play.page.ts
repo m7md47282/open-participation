@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ApiService, Redeemed } from '../api.service';
+import { readDemoLogin } from '../demo-login';
 import { ThemeSwitch } from '../theme-switch';
 
 interface Chapter {
@@ -41,6 +42,8 @@ export class PlayPage implements OnInit, OnDestroy {
   protected readonly manifest = signal<Manifest | null>(null);
   protected readonly elapsed = signal(0);
   protected readonly paused = signal(false);
+  /** Set when the viewer is signed in to the platform as a member of the share's organisation. */
+  protected readonly viewerName = signal<string | null>(null);
 
   protected readonly duration = computed(() => this.manifest()?.durationSeconds ?? 0);
   protected readonly progress = computed(() => {
@@ -89,7 +92,8 @@ export class PlayPage implements OnInit, OnDestroy {
     window.addEventListener('pagehide', this.onPageHide);
 
     try {
-      this.redeemed = await this.api.redeem(token);
+      this.redeemed = await this.api.redeem(token, readDemoLogin());
+      this.viewerName.set(this.redeemed.viewer.type === 'user' ? this.redeemed.viewer.displayName : null);
       this.title.set(this.redeemed.content.title);
       this.manifest.set(await this.api.cdn<Manifest>(this.redeemed.playback.url));
       this.state.set('playing');

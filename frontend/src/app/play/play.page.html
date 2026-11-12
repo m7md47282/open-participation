@@ -71,7 +71,11 @@
               <span class="muted small">{{ progress() }}% watched</span>
             </div>
             <p class="lesson-privacy small">
-              You are watching as an anonymous participant. No account or personal details are needed.
+              @if (viewerName(); as name) {
+                You are signed in as {{ name }}, so this viewing is recorded under your name.
+              } @else {
+                You are watching as an anonymous participant. No account or personal details are needed.
+              }
             </p>
           </div>
         </section>
@@ -118,7 +122,13 @@
         </div>
         <h1>{{ title() }}</h1>
         <p>Training complete. You can close this page.</p>
-        <p class="muted small">Your viewing was recorded anonymously for your organisation's training report.</p>
+        <p class="muted small">
+          @if (viewerName(); as name) {
+            Your viewing was recorded as {{ name }} in your organisation's training report.
+          } @else {
+            Your viewing was recorded anonymously for your organisation's training report.
+          }
+        </p>
       </section>
     }
 

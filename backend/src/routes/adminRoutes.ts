@@ -83,7 +83,9 @@ function reportRow(session: Session, deps: { shares: ShareRepository; orgs: OrgD
   return {
     ...base,
     source: 'share' as const,
-    participant: `Anonymous participant (${session.actor.participantId})`,
+    participant: session.actor.userId
+      ? (findUser(session.actor.userId)?.displayName ?? session.actor.userId)
+      : `Anonymous participant (${session.actor.participantId})`,
     shareId: session.actor.shareId,
     shareLabel: share?.label ?? null,
   };

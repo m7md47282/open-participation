@@ -3,6 +3,7 @@ import { randomToken, sha256Hex } from '../lib/crypto.js';
 import { AppError } from '../lib/errors.js';
 import type { FixedWindowLimiter } from '../lib/rateLimit.js';
 import type { ShareRepository } from '../shares/shareRepository.js';
+import type { Principal } from '../stubs/auth.js';
 import type { CdnSigner } from '../stubs/cdn.js';
 import type { OrgDirectory } from '../stubs/orgDirectory.js';
 import type { CloseReason, SessionService } from '../stubs/sessionService.js';
@@ -47,7 +48,7 @@ export class PlaybackService {
   ) {}
 
   /** Visitor scanned the QR code: validate the share, open a session, hand out a scoped grant. */
-  redeem(token: unknown, clientIp: string) {
+  redeem(token: unknown, clientIp: string, signedIn?: Principal) {
     const { shares, orgs, sessions, grants, cdn, ipLimiter, shareLimiter } = this.deps;
 
     const ipCheck = ipLimiter.take(`ip:${clientIp}`);
@@ -62,10 +63,18 @@ export class PlaybackService {
     const shareCheck = shareLimiter.take(`share:${share.id}`);
     if (!shareCheck.allowed) throw new AppError(429, 'rate_limited', 'This link is busy, try again shortly', shareCheck.retryAfterSeconds);
 
+    // Only a member of the share's own organisation is named. Anyone else, including users of
+    // other organisations, stays anonymous, so one org's report never names another org's people.
+    const member = signedIn && signedIn.orgId === share.orgId ? signedIn : undefined;
     const session = sessions.create({
       orgId: share.orgId,
       contentId: share.contentId,
-      actor: { type: 'share_guest', shareId: share.id, participantId: `anon_${randomToken(12)}` },
+      actor: {
+        type: 'share_guest',
+        shareId: share.id,
+        participantId: `anon_${randomToken(12)}`,
+        ...(member ? { userId: member.userId } : {}),
+      },
     });
     const { grant, expiresAt } = grants.sign({ sid: session.id, shr: share.id, cid: share.contentId, org: share.orgId });
     const content = orgs.getContent(share.contentId)!;
@@ -77,6 +86,7 @@ export class PlaybackService {
       content: { id: content.id, title: content.title, durationSeconds: content.durationSeconds },
       playback: cdn.signedUrl(content.id),
       refreshAfterSeconds: this.refreshAfterSeconds(),
+      viewer: member ? { type: 'user' as const, displayName: member.displayName } : { type: 'anonymous' as const },
     };
   }
 

@@ -57,6 +57,7 @@ export interface Redeemed {
   content: { id: string; title: string; durationSeconds: number };
   playback: { url: string; expiresAt: string };
   refreshAfterSeconds: number;
+  viewer: { type: 'user'; displayName: string } | { type: 'anonymous' };
 }
 
 /** Thin wrapper over the backend API. The admin token is the stubbed platform login. */
@@ -96,8 +97,9 @@ export class ApiService {
     return firstValueFrom(this.http.get<{ events: AuditEvent[] }>('/api/admin/audit', this.auth(token)));
   }
 
-  redeem(token: string) {
-    return firstValueFrom(this.http.post<Redeemed>('/api/public/shares/redeem', { token }));
+  /** `login` is optional: with a platform login, the play is recorded under that user's name. */
+  redeem(token: string, login?: string | null) {
+    return firstValueFrom(this.http.post<Redeemed>('/api/public/shares/redeem', { token }, login ? this.auth(login) : {}));
   }
 
   refresh(grant: string) {

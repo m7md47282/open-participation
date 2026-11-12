@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ThemeSwitch } from '../theme-switch';
 import { ApiService, AuditEvent, ContentItem, CreatedShare, ReportRow, Share } from '../api.service';
+import { readDemoLogin, saveDemoLogin } from '../demo-login';
 
 const DEMO_LOGINS = [
   { token: 'demo-admin-acme', label: 'Alice, admin at Acme Construction' },
   { token: 'demo-admin-globex', label: 'Carol, admin at Globex Energy' },
   { token: 'demo-learner-acme', label: 'Bob, learner at Acme (not an admin)' },
+  { token: 'demo-learner-globex', label: 'Dana, learner at Globex (not an admin)' },
 ];
 
 @Component({
@@ -21,7 +23,9 @@ export class AdminPage implements OnInit {
   private readonly api = inject(ApiService);
 
   protected readonly logins = DEMO_LOGINS;
-  protected readonly login = signal(DEMO_LOGINS[0]!.token);
+  protected readonly login = signal(
+    DEMO_LOGINS.find((l) => l.token === readDemoLogin())?.token ?? DEMO_LOGINS[0]!.token,
+  );
   protected readonly me = signal<{ displayName: string; orgName: string } | null>(null);
   protected readonly content = signal<ContentItem[]>([]);
   protected readonly shares = signal<Share[]>([]);
@@ -43,6 +47,8 @@ export class AdminPage implements OnInit {
 
   async switchLogin(token: string): Promise<void> {
     this.login.set(token);
+    // Remembered so share links opened in this browser are recorded as this user.
+    saveDemoLogin(token);
     this.created.set(null);
     await this.load();
   }

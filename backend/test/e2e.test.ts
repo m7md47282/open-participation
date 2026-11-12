@@ -12,6 +12,7 @@ import { loadConfig } from '../src/config.js';
 const ADMIN_ACME = { authorization: 'Bearer demo-admin-acme' };
 const ADMIN_GLOBEX = { authorization: 'Bearer demo-admin-globex' };
 const LEARNER_ACME = { authorization: 'Bearer demo-learner-acme' };
+const LEARNER_GLOBEX = { authorization: 'Bearer demo-learner-globex' };
 
 function harness(overrides: Record<string, string> = {}) {
   let now = Date.parse('2026-11-12T10:00:00Z');
@@ -245,6 +246,38 @@ describe('requirement 2: shared playback uses the session flow and is attributab
     for (const field of ['ip', 'ipAddress', 'userAgent', 'email', 'name', 'userId']) {
       assert.equal(field in guestRow, false, `report row must not contain ${field}`);
     }
+  });
+
+  test('a signed-in member of the organisation who opens the link is recorded by name', async () => {
+    const { share, token } = await h.createShare();
+    const res = await h.call('POST', '/api/public/shares/redeem', { headers: LEARNER_ACME, body: { token } });
+    assert.equal(res.status, 201);
+    assert.deepEqual(res.body.viewer, { type: 'user', displayName: 'Bob Learner' });
+
+    const session = h.ctx.sessions.get(res.body.sessionId)!;
+    assert.ok(session.actor.type === 'share_guest' && session.actor.userId === 'u_bob');
+
+    const report = await h.call('GET', '/api/admin/reports/sessions', { headers: ADMIN_ACME });
+    const row = report.body.sessions.find((r: any) => r.sessionId === res.body.sessionId);
+    assert.equal(row.participant, 'Bob Learner');
+    assert.equal(row.source, 'share');
+    assert.equal(row.shareId, share.id);
+  });
+
+  test('a Globex employee is named on a Globex share', async () => {
+    const { token } = await h.createShare('c_ladder', ADMIN_GLOBEX);
+    const res = await h.call('POST', '/api/public/shares/redeem', { headers: LEARNER_GLOBEX, body: { token } });
+    assert.equal(res.status, 201);
+    assert.deepEqual(res.body.viewer, { type: 'user', displayName: 'Dana Learner' });
+  });
+
+  test('a signed-in user from another organisation stays anonymous', async () => {
+    const { token } = await h.createShare();
+    const res = await h.call('POST', '/api/public/shares/redeem', { headers: ADMIN_GLOBEX, body: { token } });
+    assert.equal(res.status, 201);
+    assert.deepEqual(res.body.viewer, { type: 'anonymous' });
+    const session = h.ctx.sessions.get(res.body.sessionId)!;
+    assert.ok(session.actor.type === 'share_guest' && session.actor.userId === undefined);
   });
 
   test('share list shows usage counts', async () => {

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { grantOf, type GrantSigner } from '../playback/grant.js';
 import type { PlaybackService } from '../playback/playbackService.js';
+import { optionalPrincipal } from '../stubs/auth.js';
 
 /**
  * Public API for anonymous viewers. No platform login.
@@ -11,8 +12,9 @@ export function publicRouter(deps: { playback: PlaybackService; grants: GrantSig
   const router = Router();
   const requireGrant = deps.grants.middleware();
 
+  // A platform login is optional here. With one, the play is recorded under that user's name.
   router.post('/api/public/shares/redeem', (req, res) => {
-    res.status(201).json(deps.playback.redeem(req.body?.token, req.ip ?? 'unknown'));
+    res.status(201).json(deps.playback.redeem(req.body?.token, req.ip ?? 'unknown', optionalPrincipal(req)));
   });
 
   router.post('/api/public/playback/refresh', requireGrant, (_req, res) => {

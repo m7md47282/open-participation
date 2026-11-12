@@ -19,6 +19,7 @@ const DEMO_TOKENS: Record<string, Principal> = {
   'demo-admin-acme': { userId: 'u_alice', orgId: 'org_acme', role: 'admin', displayName: 'Alice Admin' },
   'demo-learner-acme': { userId: 'u_bob', orgId: 'org_acme', role: 'learner', displayName: 'Bob Learner' },
   'demo-admin-globex': { userId: 'u_carol', orgId: 'org_globex', role: 'admin', displayName: 'Carol Admin' },
+  'demo-learner-globex': { userId: 'u_dana', orgId: 'org_globex', role: 'learner', displayName: 'Dana Learner' },
 };
 
 const USERS_BY_ID = new Map(Object.values(DEMO_TOKENS).map((p) => [p.userId, p]));
@@ -35,6 +36,11 @@ function authenticate(req: Request): Principal | undefined {
   const header = req.get('authorization') ?? '';
   const match = /^Bearer (.+)$/.exec(header);
   return match ? DEMO_TOKENS[match[1]!] : undefined;
+}
+
+/** The platform login on a request, if any. Used where signing in is optional (opening a share link). */
+export function optionalPrincipal(req: Request): Principal | undefined {
+  return authenticate(req);
 }
 
 export const requireAdmin: RequestHandler = (req: Request, res: Response, next: NextFunction) => {

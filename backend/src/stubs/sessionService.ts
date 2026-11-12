@@ -7,12 +7,13 @@ import type { Clock } from '../lib/clock.js';
  *
  * The one extension for this feature: the actor can be a share guest instead of a user.
  * A share guest session carries the share ID and a random per-session participant ID,
- * and no personal data.
+ * and no personal data. If the viewer happens to be signed in to the platform as a member of
+ * the share's organisation, their userId is kept too, so the report can show their name.
  */
 
 export type Actor =
   | { type: 'user'; userId: string }
-  | { type: 'share_guest'; shareId: string; participantId: string };
+  | { type: 'share_guest'; shareId: string; participantId: string; userId?: string };
 
 export type CloseReason = 'completed' | 'abandoned' | 'idle_timeout' | 'share_deactivated' | 'content_disabled';
 
